@@ -398,14 +398,13 @@ int koopa_right(struct Koopa* koopa) {
         return 1;
     } else {
         /* else move right */
-        koopa->x++;
         return 0;
     }
 }
 
 /* stop the koopa from walking left/right */
 void koopa_stop(struct Koopa* koopa) {
-    koopa->move = 0;
+    koopa->move = 1;
     koopa->frame = 0;
     koopa->counter = 7;
     sprite_set_offset(koopa->sprite, koopa->frame);
@@ -508,15 +507,17 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
 
 
     /* update animation if moving */
-    koopa->counter++;
-    if (koopa->counter >= koopa->animation_delay) {
-        koopa->frame = koopa->frame + 16;
-        if (koopa->frame > 16) {
-            koopa->frame = 0;
-         }
-           sprite_set_offset(koopa->sprite, koopa->frame);
-            koopa->counter = 0;
+    if (koopa->move) {
+        koopa->counter++;
+        if (koopa->counter >= koopa->animation_delay) {
+            koopa->frame = koopa->frame + 16;
+            if (koopa->frame > 16) {
+               koopa->frame = 0;
+            }
+               sprite_set_offset(koopa->sprite, koopa->frame);
+               koopa->counter = 0;
         }
+    }
 
     /* set on screen position */
     sprite_position(koopa->sprite, koopa->x, koopa->y);
@@ -549,19 +550,7 @@ int main() {
         koopa_update(&koopa, xscroll);
 
         /* now the arrow keys move the koopa */
-        if (button_pressed(BUTTON_RIGHT)) {
-            //if (koopa_right(&koopa)) {
-            //    xscroll++;
-            //}
-        } else if (button_pressed(BUTTON_LEFT)) {
-            //if (koopa_left(&koopa)) {
-            //    xscroll--;
-           // }
-        } else {
-            koopa_stop(&koopa);
-        }
-
-        koopa.move = 1;
+        koopa_right(&koopa);
         /* check for jumping */
         if (button_pressed(BUTTON_A)) {
             koopa_jump(&koopa);
