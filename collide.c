@@ -7,13 +7,13 @@
 #define SCREEN_HEIGHT 160
 
 /* include the background image we are using */
-#include "background.h"
+#include "background2.h"
 
 /* include the sprite image we are using */
 #include "koopa.h"
 
 /* include the tile map we are using */
-#include "map.h"
+#include "possibleMap.h"
 
 /* the tile mode flags needed for display control register */
 #define MODE0 0x00
@@ -132,11 +132,11 @@ void memcpy16_dma(unsigned short* dest, unsigned short* source, int amount) {
 void setup_background() {
 
     /* load the palette from the image into palette memory*/
-    memcpy16_dma((unsigned short*) bg_palette, (unsigned short*) background_palette, PALETTE_SIZE);
+    memcpy16_dma((unsigned short*) bg_palette, (unsigned short*) background2_palette, PALETTE_SIZE);
 
     /* load the image into char block 0 */
-    memcpy16_dma((unsigned short*) char_block(0), (unsigned short*) background_data,
-            (background_width * background_height) / 2);
+    memcpy16_dma((unsigned short*) char_block(0), (unsigned short*) background2_data,
+            (background2_width * background2_height) / 2);
 
     /* set all control the bits in this register */
     *bg0_control = 0 |    /* priority, 0 is highest, 3 is lowest */
@@ -148,7 +148,7 @@ void setup_background() {
         (0 << 14);        /* bg size, 0 is 256x256 */
 
     /* load the tile data into screen block 16 */
-    memcpy16_dma((unsigned short*) screen_block(16), (unsigned short*) map, map_width * map_height);
+    memcpy16_dma((unsigned short*) screen_block(16), (unsigned short*) possibleMap, possibleMap_width * possibleMap_height);
 }
 
 /* just kill time */
@@ -483,8 +483,8 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
     }
 
     /* check which tile the koopa's feet are over */
-    unsigned short tile = tile_lookup(koopa->x + 8, koopa->y + 32, xscroll, 0, map,
-            map_width, map_height);
+    unsigned short tile = tile_lookup(koopa->x + 8, koopa->y + 32, xscroll, 0, possibleMap,
+            possibleMap_width, possibleMap_height);
 
     /* if it's block tile
      * these numbers refer to the tile indices of the blocks the koopa can walk on */
