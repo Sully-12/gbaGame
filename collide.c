@@ -10,7 +10,7 @@
 #include "background.h"
 
 /* include the sprite image we are using */
-#include "koopa.h"
+#include "dino.h"
 
 /* include the tile map we are using */
 #include "map.h"
@@ -315,10 +315,10 @@ void sprite_set_offset(struct Sprite* sprite, int offset) {
 /* setup the sprite image and palette */
 void setup_sprite_image() {
     /* load the palette from the image into palette memory*/
-    memcpy16_dma((unsigned short*) sprite_palette, (unsigned short*) koopa_palette, PALETTE_SIZE);
+    memcpy16_dma((unsigned short*) sprite_palette, (unsigned short*) dino_palette, PALETTE_SIZE);
 
     /* load the image into sprite image memory */
-    memcpy16_dma((unsigned short*) sprite_image_memory, (unsigned short*) koopa_data, (koopa_width * koopa_height) / 2);
+    memcpy16_dma((unsigned short*) sprite_image_memory, (unsigned short*) dino_data, (dino_width * dino_height) / 2);
 }
 
 /* a struct for the koopa's logic and behavior */
