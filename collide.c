@@ -474,6 +474,13 @@ unsigned short tile_lookup(int x, int y, int xscroll, int yscroll,
     return tilemap[index + offset];
 }
 
+/* Put the lose screen stuff here, and have the ability to restart the game and stuff*/
+void lose() {
+    while(1) {
+        
+    }
+}
+
 /* update the koopa */
 void koopa_update(struct Koopa* koopa, int xscroll) {
     /* update y position and speed if falling */
@@ -485,6 +492,14 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
     /* check which tile the koopa's feet are over */
     unsigned short tile = tile_lookup(koopa->x + 8, koopa->y + 32, xscroll, 0, map,
             map_width, map_height);
+
+    /*Check which tile the koopa's verticle facing body is on*/
+    unsigned short tileFront = tile_lookup(koopa->x + 8, koopa->y + 24, xscroll, 0, map, map_width, map_height);
+
+    /* Check if sprite is touching the spike */
+    if ((tileFront>=1 && tileFront<=2) || (tileFront>=12 && tileFront<=13)) {
+        lose();
+    }
 
     /* if it's block tile
      * these numbers refer to the tile indices of the blocks the koopa can walk on */
