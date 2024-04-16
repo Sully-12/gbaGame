@@ -2,7 +2,7 @@
 
 .global groundcheck
 groundcheck:
-    mov r1, #55
+    mov r1, #113
     cmp r0, r1
     bgt .larger
     mov r0, #1
