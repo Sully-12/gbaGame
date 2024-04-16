@@ -537,11 +537,13 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
     if ((tileFront==1 || tileFront==2) || (tileFront==12 || tileFront==13)) {
         koopa->y = 0;
     }
-
+    int groundcheck(int yval);
     /* if it's block tile
      * these numbers refer to the tile indices of the blocks the koopa can walk on */
-    if ((tile >= 1 && tile <= 6) || 
-            (tile >= 12 && tile <= 17)) {
+   // if ((tile >= 1 && tile <= 6) || 
+     //       (tile >= 12 && tile <= 17)) {
+    
+    if(groundcheck(koopa->y) == 0){
 
         if (tile == 1 || tile == 2 || tile == 12 || tile == 13) {
             koopa->y = 0;
@@ -552,10 +554,10 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
         koopa->yvel = 0;
 
         /* make him line up with the top of a block works by clearing out the lower bits to 0 */
-        koopa->y &= ~0x3;
+        //koopa->y &= ~0x3;
 
         /* move him down one because there is a one pixel gap in the image */
-        koopa->y++;
+        //koopa->y++;
 
     } else {
         /* he is falling now */
