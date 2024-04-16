@@ -145,7 +145,7 @@ void setup_background() {
         (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
         (16 << 8) |       /* the screen block the tile data is stored in */
         (1 << 13) |       /* wrapping flag */
-        (0 << 14);        /* bg size, 0 is 256x256 */
+        (1 << 14);        /* bg size, 0 is 256x256 */
 
     /* load the tile data into screen block 16 */
     memcpy16_dma((unsigned short*) screen_block(16), (unsigned short*) map, map_width * map_height);
@@ -474,10 +474,13 @@ unsigned short tile_lookup(int x, int y, int xscroll, int yscroll,
     return tilemap[index + offset];
 }
 
+
+//Check if the sprite is touching a spike
+int spikeCheck(int spriteX);
+
 /* Put the lose screen stuff here, and have the ability to restart the game and stuff*/
 void lose() {
     while(1) {
-        
     }
 }
 
@@ -494,17 +497,22 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
             map_width, map_height);
 
     /*Check which tile the koopa's verticle facing body is on*/
-    unsigned short tileFront = tile_lookup(koopa->x + 8, koopa->y + 24, xscroll, 0, map, map_width, map_height);
+    unsigned short tileFront = tile_lookup(koopa->x + 9, koopa->y + 24, xscroll, 0, map, map_width, map_height);
 
     /* Check if sprite is touching the spike */
-    if ((tileFront>=1 && tileFront<=2) || (tileFront>=12 && tileFront<=13)) {
-        lose();
+    if ((tileFront==1 || tileFront==2) || (tileFront==12 || tileFront==13)) {
+        koopa->y = 0;
     }
 
     /* if it's block tile
      * these numbers refer to the tile indices of the blocks the koopa can walk on */
     if ((tile >= 1 && tile <= 6) || 
             (tile >= 12 && tile <= 17)) {
+
+        if (tile == 1 || tile == 2 || tile == 12 || tile == 13) {
+            lose();
+        }
+
         /* stop the fall! */
         koopa->falling = 0;
         koopa->yvel = 0;
@@ -537,6 +545,7 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
     /* set on screen position */
     sprite_position(koopa->sprite, koopa->x, koopa->y);
 }
+
 
 /* the main function */
 int main() {
@@ -589,4 +598,5 @@ int main() {
         delay(300);
     }
 }
+
 
