@@ -16,6 +16,7 @@
 #include "map.h"
 #include "map_backGround.h"
 #include "bigVolcano.h"
+#include "gameOver.h"
 
 /* the tile mode flags needed for display control register */
 #define MODE0 0x00
@@ -155,7 +156,7 @@ void setup_background() {
             (background_width * background_height) / 2);
 
     /* set all control the bits in this register */
-    *bg0_control = 1 |    /* priority, 0 is highest, 3 is lowest */
+    *bg0_control = 0 |    /* priority, 0 is highest, 3 is lowest */
         (0 << 2)  |       /* the char block the image data is stored in */
         (0 << 6)  |       /* the mosaic flag */
         (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
@@ -164,7 +165,7 @@ void setup_background() {
         (1 << 14);        /* bg size, 0 is 256x256 */
     
     /* set all control the bits in this register */
-    *bg1_control = 2 |    /* priority, 0 is highest, 3 is lowest */
+    *bg1_control = 1 |    /* priority, 0 is highest, 3 is lowest */
         (0 << 2)  |       /* the char block the image data is stored in */
         (0 << 6)  |       /* the mosaic flag */
         (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
@@ -173,7 +174,7 @@ void setup_background() {
         (1 << 14);        /* bg size, 0 is 256x256 */
     
     /* set all control the bits in this register */
-    *bg2_control = 3 |    /* priority, 0 is highest, 3 is lowest */
+    *bg2_control = 2 |    /* priority, 0 is highest, 3 is lowest */
         (0 << 2)  |       /* the char block the image data is stored in */
         (0 << 6)  |       /* the mosaic flag */
         (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
@@ -181,12 +182,21 @@ void setup_background() {
         (1 << 13) |       /* wrapping flag */
         (1 << 14);        /* bg size, 0 is 256x256 */
 
+    /* set all control the bits in this register */
+    *bg3_control = 3 |    /* priority, 0 is highest, 3 is lowest */
+        (0 << 2)  |       /* the char block the image data is stored in */
+        (0 << 6)  |       /* the mosaic flag */
+        (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
+        (18 << 8) |       /* the screen block the tile data is stored in */
+        (1 << 13) |       /* wrapping flag */
+        (1 << 14);        /* bg size, 0 is 256x256 */
     
 
     /* load the tile data into screen block 16 */
     memcpy16_dma((unsigned short*) screen_block(12), (unsigned short*) map, map_width * map_height);
     memcpy16_dma((unsigned short*) screen_block(14), (unsigned short*) map_backGround, map_backGround_width * map_backGround_height);
     memcpy16_dma((unsigned short*) screen_block(16), (unsigned short*) bigVolcano, bigVolcano_width * bigVolcano_height);
+    memcpy16_dma((unsigned short*) screen_block(18), (unsigned short*) gameOver, gameOver_width * gameOver_height);
 
 }
 /* just kill time */
@@ -517,6 +527,32 @@ unsigned short tile_lookup(int x, int y, int xscroll, int yscroll,
 int score(int sprite1x, int sprite2x);
 
 void lose() {
+    /* set all control the bits in this register */
+    *bg0_control = 1 |    /* priority, 0 is highest, 3 is lowest */
+        (0 << 2)  |       /* the char block the image data is stored in */
+        (0 << 6)  |       /* the mosaic flag */
+        (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
+        (12 << 8) |       /* the screen block the tile data is stored in */
+        (1 << 13) |       /* wrapping flag */
+        (1 << 14);        /* bg size, 0 is 256x256 */
+    
+
+    /* set all control the bits in this register */
+    *bg3_control = 0 |    /* priority, 0 is highest, 3 is lowest */
+        (0 << 2)  |       /* the char block the image data is stored in */
+        (0 << 6)  |       /* the mosaic flag */
+        (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
+        (18 << 8) |       /* the screen block the tile data is stored in */
+        (1 << 13) |       /* wrapping flag */
+        (1 << 14);        /* bg size, 0 is 256x256 */
+
+    //Force player to let go of button and repress it
+    while(button_pressed(BUTTON_A)){
+    }
+
+    while(!button_pressed(BUTTON_A)) {
+    }
+    main();
 }
 
 /* update the koopa */
@@ -536,12 +572,12 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
 
     /* Check if sprite is touching the spike */
     if ((tileFront==1 || tileFront==2) || (tileFront==12 || tileFront==13)) {
-        koopa->y = 0;
+        lose();
     }
     int groundcheck(int yval);
     
     if (tile == 1 || tile == 2 || tile == 12 || tile == 13) {
-        koopa->y = 0;
+        lose();
     }
 
     if(groundcheck(koopa->y) == 0){
@@ -584,7 +620,7 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
 /* the main function */
 int main() {
     /* we set the mode to mode 0 with bg0 on */
-    *display_control = MODE0 | BG0_ENABLE | BG1_ENABLE | BG2_ENABLE | SPRITE_ENABLE | SPRITE_MAP_1D;
+    *display_control = MODE0 | BG0_ENABLE | BG1_ENABLE | BG2_ENABLE | BG3_ENABLE | SPRITE_ENABLE | SPRITE_MAP_1D;
 
     /* setup the background 0 */
     setup_background();
@@ -607,6 +643,9 @@ int main() {
     
     int totScore = 0;
     /* loop forever */
+    
+    delay(700);
+
     while (1) {
         /* update the koopa */
         koopa_update(&koopa, (xscroll + xscroll/2));
