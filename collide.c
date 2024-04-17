@@ -16,7 +16,7 @@
 #include "map.h"
 #include "map_backGround.h"
 #include "bigVolcano.h"
-#include "gameOver.h"
+#include "textMap.h"
 
 /* the tile mode flags needed for display control register */
 #define MODE0 0x00
@@ -184,7 +184,7 @@ void setup_background() {
 
     /* set all control the bits in this register */
     *bg3_control = 3 |    /* priority, 0 is highest, 3 is lowest */
-        (0 << 2)  |       /* the char block the image data is stored in */
+        (1 << 2)  |       /* the char block the image data is stored in */
         (0 << 6)  |       /* the mosaic flag */
         (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
         (18 << 8) |       /* the screen block the tile data is stored in */
@@ -196,7 +196,7 @@ void setup_background() {
     memcpy16_dma((unsigned short*) screen_block(12), (unsigned short*) map, map_width * map_height);
     memcpy16_dma((unsigned short*) screen_block(14), (unsigned short*) map_backGround, map_backGround_width * map_backGround_height);
     memcpy16_dma((unsigned short*) screen_block(16), (unsigned short*) bigVolcano, bigVolcano_width * bigVolcano_height);
-    memcpy16_dma((unsigned short*) screen_block(18), (unsigned short*) gameOver, gameOver_width * gameOver_height);
+    memcpy16_dma((unsigned short*) char_block(1), (unsigned short*) textMap_data, (textMap_width * textMap_height)/2);
 
 }
 /* just kill time */
@@ -526,6 +526,36 @@ unsigned short tile_lookup(int x, int y, int xscroll, int yscroll,
 //Check if the sprite is touching a spike
 int score(int sprite1x, int sprite2x);
 
+
+void set_text(char* str, int row, int col) {                    
+    /* find the index in the texmap to draw to */
+    int index = row * 32 + col;
+
+    /* the first 32 characters are missing from the map (controls etc.) */
+    int missing = 32; 
+
+    /* pointer to text map */
+    volatile unsigned short* ptr = screen_block(18);
+
+    /* for each character */
+    while (*str) {
+        /* place this character in the map */
+        ptr[index] = *str - missing;
+
+        /* move onto the next character */
+        index++;
+        str++;
+    }   
+}
+
+void textb_setup(){
+    volatile unsigned short* ptr = screen_block(18);
+    for (int i = 0; i < 32 * 32; i++) {
+        ptr[i] = 0;
+    }
+}
+
+
 void lose() {
     /* set all control the bits in this register */
     *bg0_control = 1 |    /* priority, 0 is highest, 3 is lowest */
@@ -539,7 +569,7 @@ void lose() {
 
     /* set all control the bits in this register */
     *bg3_control = 0 |    /* priority, 0 is highest, 3 is lowest */
-        (0 << 2)  |       /* the char block the image data is stored in */
+        (1 << 2)  |       /* the char block the image data is stored in */
         (0 << 6)  |       /* the mosaic flag */
         (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
         (18 << 8) |       /* the screen block the tile data is stored in */
@@ -547,6 +577,13 @@ void lose() {
         (1 << 14);        /* bg size, 0 is 256x256 */
 
     //Force player to let go of button and repress it
+    textb_setup();
+    char msg [10] = "Score:";
+    set_text(msg,7,10);
+    char msg1 [10] = "Game Over!";
+    set_text(msg1, 5, 10);
+
+
     while(button_pressed(BUTTON_A)){
     }
 
