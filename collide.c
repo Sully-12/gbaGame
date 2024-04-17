@@ -22,19 +22,21 @@
 #define BG0_ENABLE 0x100
 #define BG1_ENABLE 0x200
 #define BG2_ENABLE 0x400
-
+#define BG3_ENABLE 0x800
 /* flags to set sprite handling in display control register */
 #define SPRITE_MAP_2D 0x0
 #define SPRITE_MAP_1D 0x40
 #define SPRITE_ENABLE 0x1000
 
-
+  
 /* the control registers for the four tile layers */
 volatile unsigned short* bg0_control = (volatile unsigned short*) 0x4000008;
 /* the control registers for the four tile layers */
 volatile unsigned short* bg1_control = (volatile unsigned short*) 0x400000a;
 /* the control registers for the four tile layers */
 volatile unsigned short* bg2_control = (volatile unsigned short*) 0x400000c;
+/* the control registers for the four tile layers */
+volatile unsigned short* bg3_control = (volatile unsigned short*) 0x400000e;
 
 /* palette is always 256 colors */
 #define PALETTE_SIZE 256
@@ -179,12 +181,14 @@ void setup_background() {
         (1 << 13) |       /* wrapping flag */
         (1 << 14);        /* bg size, 0 is 256x256 */
 
+    
+
     /* load the tile data into screen block 16 */
     memcpy16_dma((unsigned short*) screen_block(12), (unsigned short*) map, map_width * map_height);
     memcpy16_dma((unsigned short*) screen_block(14), (unsigned short*) map_backGround, map_backGround_width * map_backGround_height);
     memcpy16_dma((unsigned short*) screen_block(16), (unsigned short*) bigVolcano, bigVolcano_width * bigVolcano_height);
-}
 
+}
 /* just kill time */
 void delay(unsigned int amount) {
     for (int i = 0; i < amount * 10; i++);
@@ -510,12 +514,9 @@ unsigned short tile_lookup(int x, int y, int xscroll, int yscroll,
 
 
 //Check if the sprite is touching a spike
-int spikeCheck(int spriteX);
+int score(int sprite1x, int sprite2x);
 
-/* Put the lose screen stuff here, and have the ability to restart the game and stuff*/
 void lose() {
-    while(1) {
-    }
 }
 
 /* update the koopa */
@@ -538,16 +539,13 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
         koopa->y = 0;
     }
     int groundcheck(int yval);
-    /* if it's block tile
-     * these numbers refer to the tile indices of the blocks the koopa can walk on */
-   // if ((tile >= 1 && tile <= 6) || 
-     //       (tile >= 12 && tile <= 17)) {
     
+    if (tile == 1 || tile == 2 || tile == 12 || tile == 13) {
+        koopa->y = 0;
+    }
+
     if(groundcheck(koopa->y) == 0){
 
-        if (tile == 1 || tile == 2 || tile == 12 || tile == 13) {
-            koopa->y = 0;
-        }
 
         /* stop the fall! */
         koopa->falling = 0;
@@ -606,6 +604,8 @@ int main() {
 
     /* set initial scroll to 0 */
     int xscroll = 0;
+    
+    int totScore = 0;
     /* loop forever */
     while (1) {
         /* update the koopa */
@@ -629,6 +629,9 @@ int main() {
         *bg0_x_scroll = xscroll + (xscroll/2);
         *bg1_x_scroll = 2*xscroll;
         *bg2_x_scroll = xscroll;
+        
+        
+        //totScore += score(koopa.x, sprite1.x);
         sprite_update_all();
 
         /* delay some */
