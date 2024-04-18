@@ -554,12 +554,7 @@ void set_text(char* str, int row, int col) {
     }   
 }
 
-void textb_setup(){
-    volatile unsigned short* ptr = screen_block(18);
-    for (int i = 0; i < 32 * 32; i++) {
-        ptr[i] = 0;
-    }
-}
+void textSetup(volatile unsigned short* ptr);
 
 
 void lose() {
@@ -583,7 +578,8 @@ void lose() {
         (1 << 14);        /* bg size, 0 is 256x256 */
 
     //Force player to let go of button and repress it
-    textb_setup();
+    volatile unsigned short* ptr = screen_block(18);
+    textSetup(ptr);
     //Declare all the strings
     char gameOver [11] = "Game Over!";
     char scoreFormat [15];
