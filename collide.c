@@ -1,11 +1,15 @@
+/*
+ * collide.c
+ * program that replicated the dino game (on steroid)
+ */
+
+
+//includes for the project
 #include<stdlib.h>
 #include<string.h>
 #include<stdio.h>
-/*
- * collide.c
- * program which demonstrates sprites colliding with tiles
- */
 
+//Define the height/width of the screen
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 160
 
@@ -151,7 +155,7 @@ void memcpy16_dma(unsigned short* dest, unsigned short* source, int amount) {
     *dma_count = amount | DMA_16 | DMA_ENABLE;
 }
 
-/* function to setup background 0 for this program */
+/* function to setup the backgrounds for this program */
 void setup_background() {
 
     /* load the palette from the image into palette memory*/
@@ -161,6 +165,7 @@ void setup_background() {
     memcpy16_dma((unsigned short*) char_block(0), (unsigned short*) background_data,
             (background_width * background_height) / 2);
 
+    //The first map is the ground/obstacles
     /* set all control the bits in this register */
     *bg0_control = 1 |    /* priority, 0 is highest, 3 is lowest */
         (0 << 2)  |       /* the char block the image data is stored in */
@@ -170,6 +175,7 @@ void setup_background() {
         (1 << 13) |       /* wrapping flag */
         (1 << 14);        /* bg size, 0 is 256x256 */
     
+    //The second map is the background elements (close)
     /* set all control the bits in this register */
     *bg1_control = 2 |    /* priority, 0 is highest, 3 is lowest */
         (0 << 2)  |       /* the char block the image data is stored in */
@@ -179,6 +185,7 @@ void setup_background() {
         (1 << 13) |       /* wrapping flag */
         (1 << 14);        /* bg size, 0 is 256x256 */
     
+    //The third map is the big volcano in the background
     /* set all control the bits in this register */
     *bg2_control = 3 |    /* priority, 0 is highest, 3 is lowest */
         (0 << 2)  |       /* the char block the image data is stored in */
@@ -188,6 +195,7 @@ void setup_background() {
         (1 << 13) |       /* wrapping flag */
         (1 << 14);        /* bg size, 0 is 256x256 */
 
+    //The fourth map is the score
     /* set all control the bits in this register */
     *bg3_control = 0 |    /* priority, 0 is highest, 3 is lowest */
         (1 << 2)  |       /* the char block the image data is stored in */
@@ -420,12 +428,8 @@ void koopa_init(struct Koopa* koopa) {
     koopa->counter = 0;
     koopa->falling = 0;
     koopa->animation_delay = 8;
-    koopa->sprite = sprite_init(koopa->x, koopa->y, SIZE_16_32, 0, 0, koopa->frame, 0);
+    koopa->sprite = sprite_init(koopa->x, koopa->y, SIZE_16_32, 0, 0, koopa->frame, 1);
 }
-
-
-
-//Ignore these
 
 /* move the koopa left or right returns if it is at edge of the screen */
 int koopa_left(struct Koopa* koopa) {
@@ -528,11 +532,7 @@ unsigned short tile_lookup(int x, int y, int xscroll, int yscroll,
     return tilemap[index + offset];
 }
 
-
-//Check if the sprite is touching a spike
-//int calcScore(int pixelsTraveled);
-
-
+//This function places the text passed on the screen at the positions specified
 void set_text(char* str, int row, int col) {                    
     /* find the index in the texmap to draw to */
     int index = row * 32 + col;
@@ -554,10 +554,17 @@ void set_text(char* str, int row, int col) {
     }   
 }
 
+//These are the declarations of the assembly functions
+
+//Clear out the screen to be fully blank before displaying text
 void textSetup(volatile unsigned short* ptr);
+//This function calculates how fast the screen moves based off how far in the game a player is
 int calcXscroll(int currentXscrollDist);
 
+//This is the function that is called when a player touches a spike
 void lose() {
+    //First update the screen with the proper priorities
+
     /* set all control the bits in this register */
     *bg0_control = 1 |    /* priority, 0 is highest, 3 is lowest */
         (0 << 2)  |       /* the char block the image data is stored in */
@@ -566,8 +573,6 @@ void lose() {
         (12 << 8) |       /* the screen block the tile data is stored in */
         (1 << 13) |       /* wrapping flag */
         (1 << 14);        /* bg size, 0 is 256x256 */
-    
-
     /* set all control the bits in this register */
     *bg3_control = 0 |    /* priority, 0 is highest, 3 is lowest */
         (1 << 2)  |       /* the char block the image data is stored in */
@@ -577,17 +582,18 @@ void lose() {
         (1 << 13) |       /* wrapping flag */
         (1 << 14);        /* bg size, 0 is 256x256 */
 
-    //Force player to let go of button and repress it
+    //Clear the screen for putting the text on it
     volatile unsigned short* ptr = screen_block(18);
     textSetup(ptr);
     //Declare all the strings
+    char restart [25] = "Press a to restart";
     char gameOver [11] = "Game Over!";
     char scoreFormat [15];
     char highScoreString [25];
-    //Check if new high score
+    //Check if new high score (Display and overwrite if so)
     if (score > highScore) {
         char newHighScore [25] = "New High Score!!";
-        set_text(newHighScore, 5, 10);
+        set_text(newHighScore, 3, 8);
         highScore = score;
     }
     
@@ -595,11 +601,15 @@ void lose() {
     sprintf(scoreFormat, "Score: %d", score); 
     sprintf(highScoreString, "High Score: %d", highScore);
 
-    set_text(gameOver, 7, 10);
-    set_text(highScoreString, 9, 10);
-    set_text(scoreFormat,11,10);
+    //Put the text actually on the screen
+    set_text(gameOver, 5, 8);
+    set_text(highScoreString, 7, 8);
+    set_text(scoreFormat,9,8);
+    set_text(restart, 11, 8);
 
-
+    //This part deals with how the user presses the buttons
+    //Forces them to have a full "press" before beginning the game again
+    //A "press" meaning from not pressing, to pressing, to not pressing
     while(button_pressed(BUTTON_A)){
     }
 
@@ -608,7 +618,10 @@ void lose() {
 
     while(button_pressed(BUTTON_A)){
     }
+    
+    //Call main and restart the game
     main();
+
 }
 
 /* update the koopa */
@@ -627,28 +640,22 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
     unsigned short tileFront = tile_lookup(koopa->x + 9, koopa->y + 24, xscroll, 0, map, map_width, map_height);
 
     /* Check if sprite is touching the spike */
+    //Check in front of
     if ((tileFront==1 || tileFront==2) || (tileFront==12 || tileFront==13)) {
         lose();
     }
-    int groundcheck(int yval);
-    
+    //Check below
     if (tile == 1 || tile == 2 || tile == 12 || tile == 13) {
         lose();
     }
 
+    int groundcheck(int yval);
+    
+
     if(groundcheck(koopa->y) == 0){
-
-
         /* stop the fall! */
         koopa->falling = 0;
         koopa->yvel = 0;
-
-        /* make him line up with the top of a block works by clearing out the lower bits to 0 */
-        //koopa->y &= ~0x3;
-
-        /* move him down one because there is a one pixel gap in the image */
-        //koopa->y++;
-
     } else {
         /* he is falling now */
         koopa->falling = 1;
@@ -675,7 +682,9 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
 
 /* the main function */
 int main() {
+    //reset the score to 0
     score = 0;
+
     /* we set the mode to mode 0 with bg0 on */
     *display_control = MODE0 | BG0_ENABLE | BG1_ENABLE | BG2_ENABLE | BG3_ENABLE | SPRITE_ENABLE | SPRITE_MAP_1D;
 
@@ -688,20 +697,42 @@ int main() {
     /* clear all the sprites on screen now */
     sprite_clear();
 
-    /* create the koopa */
+    /* create the sprites */
     struct Koopa koopa;
     koopa_init(&koopa);
     struct Koopa sprite1;
     koopa_init(&sprite1);
+    //Offset the new sprite by a litte bit
     sprite1.x = 70;
 
     /* set initial scroll to 0 */
     int xscroll = 0;
+    //Set the initial scroll increment to the returned value
     int xscrollInc = calcXscroll(xscroll);    
-    /* loop forever */
+
+    //Declare the screen pointer and clear the screen of text
+    volatile unsigned short* ptr = screen_block(18);
+    textSetup(ptr);
+
+    //See if this is the first time playing
+    //High score won't be 0 if it's not
+    if (highScore == 0) {
+        //Set the screen to the start message
+        char startUp [30] = "Press a to start";
+        set_text(startUp, 5, 8);
+        //Wait for the user to press and release the a button
+        while(!button_pressed(BUTTON_A)){
+        }
+        while(button_pressed(BUTTON_A)){
+        }
+        //Clear the screen of text
+        textSetup(ptr);    
+    }
     
+    //delay before beginning
     delay(700);
-    int traveled = 0;
+    
+    /* loop forever */
     while (1) {
         /* update the koopa */
         koopa_update(&koopa, (xscroll + xscroll/2));
@@ -710,6 +741,7 @@ int main() {
         /* now the arrow keys move the koopa */
         koopa_right(&koopa);
         koopa_right(&sprite1);
+
         /* check for jumping */
         if (button_pressed(BUTTON_A)) {
             koopa_jump(&koopa);
@@ -718,23 +750,29 @@ int main() {
         if (button_pressed(BUTTON_DOWN)){
             koopa_jump(&sprite1);
         }
-
-        xscrollInc = calcXscroll(xscroll);    
+        
+        //Calculate the scroll increment
+        xscrollInc = calcXscroll(xscroll);
+        //Scroll the screen    
         xscroll += xscrollInc;
+
         /* wait for vblank before scrolling and moving sprites */
         wait_vblank();
+        //Offset each layer's scroll by a little bit
         *bg0_x_scroll = xscroll + (xscroll/2);
         *bg1_x_scroll = 2*xscroll;
         *bg2_x_scroll = xscroll;
-
-        volatile unsigned short* ptr = screen_block(18);
-        textSetup(ptr);
+        
+        //Create a string to display the user's score to the screen while they play
         char scoreFormat [15];
         sprintf(scoreFormat, "Score: %d", score); 
+        //Display the score
         set_text(scoreFormat,0,0);
 
+        //Increment the score
         score += 1;
         
+        //update all the sprites
         sprite_update_all();
 
         /* delay some */
