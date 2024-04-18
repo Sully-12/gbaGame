@@ -162,7 +162,7 @@ void setup_background() {
             (background_width * background_height) / 2);
 
     /* set all control the bits in this register */
-    *bg0_control = 0 |    /* priority, 0 is highest, 3 is lowest */
+    *bg0_control = 1 |    /* priority, 0 is highest, 3 is lowest */
         (0 << 2)  |       /* the char block the image data is stored in */
         (0 << 6)  |       /* the mosaic flag */
         (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
@@ -171,7 +171,7 @@ void setup_background() {
         (1 << 14);        /* bg size, 0 is 256x256 */
     
     /* set all control the bits in this register */
-    *bg1_control = 1 |    /* priority, 0 is highest, 3 is lowest */
+    *bg1_control = 2 |    /* priority, 0 is highest, 3 is lowest */
         (0 << 2)  |       /* the char block the image data is stored in */
         (0 << 6)  |       /* the mosaic flag */
         (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
@@ -180,7 +180,7 @@ void setup_background() {
         (1 << 14);        /* bg size, 0 is 256x256 */
     
     /* set all control the bits in this register */
-    *bg2_control = 2 |    /* priority, 0 is highest, 3 is lowest */
+    *bg2_control = 3 |    /* priority, 0 is highest, 3 is lowest */
         (0 << 2)  |       /* the char block the image data is stored in */
         (0 << 6)  |       /* the mosaic flag */
         (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
@@ -189,7 +189,7 @@ void setup_background() {
         (1 << 14);        /* bg size, 0 is 256x256 */
 
     /* set all control the bits in this register */
-    *bg3_control = 3 |    /* priority, 0 is highest, 3 is lowest */
+    *bg3_control = 0 |    /* priority, 0 is highest, 3 is lowest */
         (1 << 2)  |       /* the char block the image data is stored in */
         (0 << 6)  |       /* the mosaic flag */
         (1 << 7)  |       /* color mode, 0 is 16 colors, 1 is 256 colors */
@@ -530,7 +530,7 @@ unsigned short tile_lookup(int x, int y, int xscroll, int yscroll,
 
 
 //Check if the sprite is touching a spike
-int calcScore(int pixelsTraveled);
+//int calcScore(int pixelsTraveled);
 
 
 void set_text(char* str, int row, int col) {                    
@@ -555,7 +555,7 @@ void set_text(char* str, int row, int col) {
 }
 
 void textSetup(volatile unsigned short* ptr);
-
+int calcXscroll(int currentXscrollDist);
 
 void lose() {
     /* set all control the bits in this register */
@@ -604,6 +604,9 @@ void lose() {
     }
 
     while(!button_pressed(BUTTON_A)) {
+    }
+
+    while(button_pressed(BUTTON_A)){
     }
     main();
 }
@@ -694,7 +697,7 @@ int main() {
 
     /* set initial scroll to 0 */
     int xscroll = 0;
-    
+    int xscrollInc = calcXscroll(xscroll);    
     /* loop forever */
     
     delay(700);
@@ -703,7 +706,7 @@ int main() {
         /* update the koopa */
         koopa_update(&koopa, (xscroll + xscroll/2));
         koopa_update(&sprite1, (xscroll + xscroll/2));
-        traveled += xscroll/2;
+        
         /* now the arrow keys move the koopa */
         koopa_right(&koopa);
         koopa_right(&sprite1);
@@ -715,12 +718,20 @@ int main() {
         if (button_pressed(BUTTON_DOWN)){
             koopa_jump(&sprite1);
         }
-        xscroll++;
+
+        xscrollInc = calcXscroll(xscroll);    
+        xscroll += xscrollInc;
         /* wait for vblank before scrolling and moving sprites */
         wait_vblank();
         *bg0_x_scroll = xscroll + (xscroll/2);
         *bg1_x_scroll = 2*xscroll;
         *bg2_x_scroll = xscroll;
+
+        volatile unsigned short* ptr = screen_block(18);
+        textSetup(ptr);
+        char scoreFormat [15];
+        sprintf(scoreFormat, "Score: %d", score); 
+        set_text(scoreFormat,0,0);
 
         score += 1;
         
