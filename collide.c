@@ -1,3 +1,6 @@
+#include<stdlib.h>
+#include<string.h>
+#include<stdio.h>
 /*
  * collide.c
  * program which demonstrates sprites colliding with tiles
@@ -29,6 +32,9 @@
 #define SPRITE_MAP_1D 0x40
 #define SPRITE_ENABLE 0x1000
 
+//The scores for the game
+volatile int highScore = 0;
+volatile int score = 0;
   
 /* the control registers for the four tile layers */
 volatile unsigned short* bg0_control = (volatile unsigned short*) 0x4000008;
@@ -524,7 +530,7 @@ unsigned short tile_lookup(int x, int y, int xscroll, int yscroll,
 
 
 //Check if the sprite is touching a spike
-int score(int sprite1x, int sprite2x);
+int calcScore(int pixelsTraveled);
 
 
 void set_text(char* str, int row, int col) {                    
@@ -578,10 +584,24 @@ void lose() {
 
     //Force player to let go of button and repress it
     textb_setup();
-    char msg [10] = "Score:";
-    set_text(msg,7,10);
-    char msg1 [10] = "Game Over!";
-    set_text(msg1, 5, 10);
+    //Declare all the strings
+    char gameOver [11] = "Game Over!";
+    char scoreFormat [15];
+    char highScoreString [25];
+    //Check if new high score
+    if (score > highScore) {
+        char newHighScore [25] = "New High Score!!";
+        set_text(newHighScore, 5, 10);
+        highScore = score;
+    }
+    
+    //Concatenate the ints to the string
+    sprintf(scoreFormat, "Score: %d", score); 
+    sprintf(highScoreString, "High Score: %d", highScore);
+
+    set_text(gameOver, 7, 10);
+    set_text(highScoreString, 9, 10);
+    set_text(scoreFormat,11,10);
 
 
     while(button_pressed(BUTTON_A)){
@@ -656,6 +676,7 @@ void koopa_update(struct Koopa* koopa, int xscroll) {
 
 /* the main function */
 int main() {
+    score = 0;
     /* we set the mode to mode 0 with bg0 on */
     *display_control = MODE0 | BG0_ENABLE | BG1_ENABLE | BG2_ENABLE | BG3_ENABLE | SPRITE_ENABLE | SPRITE_MAP_1D;
 
@@ -678,16 +699,15 @@ int main() {
     /* set initial scroll to 0 */
     int xscroll = 0;
     
-    int totScore = 0;
     /* loop forever */
     
     delay(700);
-
+    int traveled = 0;
     while (1) {
         /* update the koopa */
         koopa_update(&koopa, (xscroll + xscroll/2));
         koopa_update(&sprite1, (xscroll + xscroll/2));
-
+        traveled += xscroll/2;
         /* now the arrow keys move the koopa */
         koopa_right(&koopa);
         koopa_right(&sprite1);
@@ -705,9 +725,9 @@ int main() {
         *bg0_x_scroll = xscroll + (xscroll/2);
         *bg1_x_scroll = 2*xscroll;
         *bg2_x_scroll = xscroll;
+
+        score += 1;
         
-        
-        //totScore += score(koopa.x, sprite1.x);
         sprite_update_all();
 
         /* delay some */
